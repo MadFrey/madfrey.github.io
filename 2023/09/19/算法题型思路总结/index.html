@@ -25,7 +25,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/img/hutao-1.png">
 <meta property="article:published_time" content="2023-09-19T12:18:08.000Z">
-<meta property="article:modified_time" content="2023-10-17T00:36:58.174Z">
+<meta property="article:modified_time" content="2023-10-17T00:40:26.890Z">
 <meta property="article:author" content="John Doe">
 <meta property="article:tag" content="剑指offer">
 <meta name="twitter:card" content="summary_large_image">
@@ -380,7 +380,7 @@
 <p>用dp，先取字符串的子串，然后判断字串能否被字典里的字符串拼接表示</p>
 <p>我当时觉得难主要是想着一个字符串可以拆成”l” “e” e” “t”等等，拆出非常多来</p>
 <p>但后面发现其实都是子问题罢了 :joy:</p>
-<p>还是太菜了，要狠狠的刷题</p>
+<p>还是太菜了，要狠狠的刷题！</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">wordBreak</span><span class="hljs-params">(s <span class="hljs-type">string</span>, wordDict []<span class="hljs-type">string</span>)</span></span> <span class="hljs-type">bool</span> &#123;<br>    m := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">map</span>[<span class="hljs-type">string</span>]<span class="hljs-type">bool</span>)<br>    <span class="hljs-keyword">for</span> _,v:=<span class="hljs-keyword">range</span> wordDict &#123;<br>         m[v] = <span class="hljs-literal">true</span><br>    &#125;<br>    dp:=<span class="hljs-built_in">make</span>([]<span class="hljs-type">bool</span>,<span class="hljs-built_in">len</span>(s)+<span class="hljs-number">1</span>)<br>    dp[<span class="hljs-number">0</span>] = <span class="hljs-literal">true</span><br>    <span class="hljs-keyword">for</span> i:=<span class="hljs-number">1</span>;i&lt;=<span class="hljs-built_in">len</span>(s);i++ &#123;<br>        <span class="hljs-keyword">for</span> j :=<span class="hljs-number">0</span> ; j&lt;i;j++ &#123;<br>            <span class="hljs-keyword">if</span> dp[j]&amp;&amp;m[s[j:i]]&#123;<br>                dp[i] = <span class="hljs-literal">true</span><br>                <span class="hljs-keyword">break</span><br>            &#125;<br>        &#125;<br>    &#125;<br>    <span class="hljs-keyword">return</span> dp[<span class="hljs-built_in">len</span>(s)]<br>&#125;<br></code></pre></td></tr></table></figure>
 
 
