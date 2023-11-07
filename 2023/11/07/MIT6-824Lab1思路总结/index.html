@@ -1,0 +1,711 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/madfrey.png">
+  <link rel="icon" href="/img/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="MadFrey">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="因为824的老师不希望我们开源代码，所以我就放在gitee上（doge），外国人总不会用gitee吧 Gitee仓库地址：MadFray&#x2F;MIT6.824 (gitee.com) 然后用写篇blog记录一下在做lab1时候的思路和遇到坑点 在最开始做的时候，因为论文讲述的是在cluster下的情况，现在放到了单机实现，有一定的上手难度，但是最无语的一件事是没有看完hint就去做，导致当时">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MIT6.824Lab1思路总结">
+<meta property="og:url" content="http://example.com/2023/11/07/MIT6-824Lab1%E6%80%9D%E8%B7%AF%E6%80%BB%E7%BB%93/index.html">
+<meta property="og:site_name" content="MadFrey&#39;s Blog">
+<meta property="og:description" content="因为824的老师不希望我们开源代码，所以我就放在gitee上（doge），外国人总不会用gitee吧 Gitee仓库地址：MadFray&#x2F;MIT6.824 (gitee.com) 然后用写篇blog记录一下在做lab1时候的思路和遇到坑点 在最开始做的时候，因为论文讲述的是在cluster下的情况，现在放到了单机实现，有一定的上手难度，但是最无语的一件事是没有看完hint就去做，导致当时">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/img/155533.png">
+<meta property="article:published_time" content="2023-11-07T07:51:49.000Z">
+<meta property="article:modified_time" content="2023-11-07T07:59:22.718Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="MIT6.824">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/img/155533.png">
+  
+  
+    <meta name="referrer" content="no-referrer-when-downgrade">
+  
+  
+  <title>MIT6.824Lab1思路总结 - MadFrey&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>MadFrey&#39;s Blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/" target="_self">
+                <i class="iconfont icon-link-fill"></i>
+                <span>友链</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="MIT6.824Lab1思路总结"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-author" aria-hidden="true"></i>
+        MadFrey
+      </span>
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-11-07 15:51" pubdate>
+          2023年11月7日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.4k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          37 分钟
+        
+      </span>
+    
+
+    
+    
+      
+        <span id="busuanzi_container_page_pv" style="display: none">
+          <i class="iconfont icon-eye" aria-hidden="true"></i>
+          <span id="busuanzi_value_page_pv"></span> 次
+        </span>
+        
+      
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">MIT6.824Lab1思路总结</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>因为824的老师不希望我们开源代码，所以我就放在gitee上（doge），外国人总不会用gitee吧</p>
+<p>Gitee仓库地址：<a target="_blank" rel="noopener" href="https://gitee.com/MadFray/mit6.824">MadFray&#x2F;MIT6.824 (gitee.com)</a></p>
+<p>然后用写篇blog记录一下在做lab1时候的思路和遇到坑点</p>
+<p>在最开始做的时候，因为论文讲述的是在cluster下的情况，现在放到了单机实现，有一定的上手难度，但是最无语的一件事是没有看完hint就去做，导致当时想要通过协程来实现，这不合老师们的想法（hint没有这方面的提示），同时这方面是思路是空白的，也就是说实现起来会相对比较困难（但其实后面单独测试的时候，去改脚本发现其实他的脚本就是挂后台启动了好几个worker，这也就意味着，这个worker应该是既可以做map也可以做reduce的）。</p>
+<p>在后面看了一篇csdn的博客后，自己私下里又把hint完完整整的看完了一遍，才真正算是理清楚了思路，大致知道了老师们希望我们怎么做。理清楚了思路做起来就快了真正开始动手做到完成lab大花了1天半多的时间，加上看论文等资料，实际需要的时间我估计应该在最多3天左右，当然我指的是一天的大部分时间都花在这上面，需要3天</p>
+<p>接下来就来说一下我的思路和一下经验总结</p>
+<p>我是首先实现的worker</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Worker</span><span class="hljs-params">(mapffunc(<span class="hljs-type">string</span>,<span class="hljs-type">string</span>)</span></span> []KeyValue,<br><br>	reduceffunc(<span class="hljs-type">string</span>, []<span class="hljs-type">string</span>)<span class="hljs-type">string</span>) &#123;<br><br>	<span class="hljs-comment">// Your worker implementation here.</span><br><br><span class="hljs-keyword">for</span> &#123;<br><br>		task := GetTask()<br><br><span class="hljs-keyword">switch</span> task.TaskType &#123;<br><br><span class="hljs-keyword">case</span> MapTask:<br><br>			&#123;<br><br>				DoMap(mapf, task)<br><br>				DoneTask(task)<br><br>			&#125;<br><br><span class="hljs-keyword">case</span> CompleteTask:<br><br>			&#123;<br><br>				<span class="hljs-comment">//exit</span><br><br><span class="hljs-keyword">return</span><br>			&#125;<br><br><span class="hljs-keyword">case</span> ReduceTask:<br><br>			&#123;<br><br>				DoReduceTask(reducef,task)<br><br>				DoneTask(task)<br><br>			&#125;<br><br>		&#125;<br><br>	&#125;<br><br>	<span class="hljs-comment">// uncomment to send the Example RPC to the coordinator.</span><br><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>因为上面提到过，worker要map和reduce都能处理，所以我们要根据穿过来的task参数中的tasktype来进行判断应该做什么处理</p>
+<p>这边提一下我并没有去维护worker的状态，而只使用了task的状态，只维护task的状态相对来讲会更加简单</p>
+<p>然后在实现DoMap的时候，这里一开始实现的时候没有注意到并发问题（当然，在并发问题之前其实还有一个小问题，我把create文件放到了for循环里，这导致所有的key value都没有追加到对应的tmp文件中，而是后面覆盖前面（create会如果已经存在了同名文件，那么就会进行覆盖），导致到了最后处理完了所有的out都只有一条记录，犯傻了，我好菜&gt;_&lt;🥺）</p>
+<p>如果不使用临时文件的话，可以使用另一种方法：将所有的key value都处理好，然后使用一个二维数组进行存储，最后统一一次性创建文件然后将全部写入文件</p>
+<p>也就是说如果不使用临时文件这一种方法的话，那么就将所有的kv都存在内存中，最后一起写入到文件中来避免并发问题</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">DoMap</span><span class="hljs-params">(mapffunc(<span class="hljs-type">string</span>,<span class="hljs-type">string</span>)</span></span> []KeyValue, raw Task) &#123;<span class="hljs-comment">//这里应该有并发问题,已经解决</span><br><br>	<span class="hljs-comment">//ps： 因为都在GFS里，所以知道了filename就可以直接读(自认为)</span><br><br>	file, err := os.Open(raw.Filename)<br><br><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;<br><br>		log.Fatalf(<span class="hljs-string">&quot;cannot open %v&quot;</span>, raw.Filename)<br><br>	&#125;<br><br>	content, err := io.ReadAll(file)<br><br><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;<br><br>		log.Fatalf(<span class="hljs-string">&quot;cannot read %v&quot;</span>, raw.Filename)<br><br>	&#125;<br><br>	file.Close()<br><br>	kva := mapf(raw.Filename,<span class="hljs-type">string</span>(content))<br><br>	<span class="hljs-comment">//intermediate = append(intermediate, kva...)</span><br><br>	<span class="hljs-comment">//create intermediate file  what&#x27;s the mean of k and y</span><br><br>	<span class="hljs-comment">// use json</span><br><br>	<span class="hljs-comment">//提前创建好文件</span><br><br>	dir, _ := os.Getwd()<br><br>	Mapfiles := []*os.File&#123;&#125;<br><br><span class="hljs-keyword">for</span> i:=<span class="hljs-number">0</span>;i&lt;raw.ReduceSum;i++&#123;<br><br>		oname,_:=os.CreateTemp(dir,<span class="hljs-string">&quot;&quot;</span>)<br><br>		<span class="hljs-comment">//newfile, _ := os.Create(&quot;mr-&quot; + fmt.Sprint(raw.TaskNum)+ &quot;-&quot; + fmt.Sprint(i)) //use ihash to confirm reduceNum</span><br><br>		Mapfiles = <span class="hljs-built_in">append</span>(Mapfiles,oname)<br><br>	&#125;<br><br><span class="hljs-keyword">for</span> _, v :=<span class="hljs-keyword">range</span> kva &#123;  <span class="hljs-comment">//如果文件存在会将所有文件内容清空，所以不能每次都用create创建一个</span><br><br>		<span class="hljs-comment">//newfile, _ := os.Create(&quot;mr-&quot; + fmt.Sprint(raw.TaskNum)+ &quot;-&quot; + fmt.Sprint(ihash(v.Key)%raw.ReduceSum)) //use ihash to confirm reduceNum</span><br><br>		f := Mapfiles[ihash(v.Key)%raw.ReduceSum]<br><br>		enc := json.NewEncoder(f)<br><br>		err := enc.Encode(&amp;v)<br><br><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;<br><br>			log.Println(err)<br><br>		&#125;<br><br>	&#125;<br><br><span class="hljs-keyword">for</span> i,v:=<span class="hljs-keyword">range</span> Mapfiles&#123;<br><br>		err := os.Rename(v.Name(),fmt.Sprintf(<span class="hljs-string">&quot;mr-%d-%d&quot;</span>, raw.TaskNum, i)) <span class="hljs-comment">//use ihash to confirm reduceNum</span><br><br><span class="hljs-keyword">if</span> err!= <span class="hljs-literal">nil</span> &#123;<br><br>			log.Println(err)<br><br>		&#125;<br><br>	&#125;<br><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>worker相对来说比较简单，这边就先简单的把我踩到的坑写出来给大家吸取教训，Doreduce等比较简单，这边就不再多提</p>
+<p>接下来讲一下coodinator，我个人觉得这一块相较worker来说还是有点难度的，但也还好，100多行代码就能完成，因为我们只维护worker的状态</p>
+<p>然后coodinator关键点在于task的分配，这里hint有提示，我们需要在确保map全部都完成后在分配reduce任务</p>
+<p>这边提一下我在第三次测试是时候有一个job count 测试点过不去，他通过要求的map次数是8次，但是不知道为什么我的会执行出9次来</p>
+<p>后面调了一节课，分析了一波问题有关的上下游，最后发现FinishedTask加的锁给他去掉就能够通过了</p>
+<p>我在一开始写的时候也觉得并不是很有必要加锁，他都是改成true，就算有可能同时修改一个，那他们的结果也是相同的，都是修改成true，实际影响不大</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(c *Coordinator)</span></span> FinishedTask(args *FinishArgs, reply *Task) <span class="hljs-type">error</span> &#123;<br>	<span class="hljs-comment">//标记任务是否完成</span><br>	<span class="hljs-comment">//todo 有必要加锁吗， 确实是共享的变量</span><br>	<span class="hljs-comment">//事实证明是不需要加锁的</span><br>	<span class="hljs-keyword">switch</span> args.Ts.TaskType &#123;<br>		<span class="hljs-keyword">case</span> MapTask:<br>			c.finishedMapfiles[args.Ts.TaskNum] = <span class="hljs-literal">true</span><br>			fmt.Println(args.Ts.TaskNum)<br>		<br>		<span class="hljs-keyword">case</span> ReduceTask:<br>			c.finishedReducefiles[args.Ts.TaskNum] = <span class="hljs-literal">true</span><br>	&#125;<br>	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>但是为什么这里加锁会导致出问题呢？</p>
+<p>我个人分析，可能有不正确的地方，欢迎到gitee上指出</p>
+<p>他的shell脚本会启动3个worker，进行并发，当其中6个都完成了只剩下最后一个没完成是，其中两个worker会在gettask中不断循环，循环会有checkfinish，checkfinish也会对isfinish数组进行访问，此时rpc调用完成借口并且加锁，可能是导致不能及时讲任务的isfinish数组设置true的原因</p>
+<p>最后附上我的结构体定义</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">type</span> Coordinator <span class="hljs-keyword">struct</span> &#123;<br>	<span class="hljs-comment">// Your definitions here.</span><br>	mu sync.Mutex<br>	nReduce <span class="hljs-type">int</span> <span class="hljs-comment">//how much tasks need to done </span><br>	files    []<span class="hljs-type">string</span><br>	finishedMapfiles []<span class="hljs-type">bool</span><br>	TimesfinishedMapfiles []time.Time<br>	finishedReducefiles []<span class="hljs-type">bool</span><br>	TimesfinishedReducefiles []time.Time<br>	Isdone <span class="hljs-type">bool</span> <span class="hljs-comment">//是否全部完成</span><br><br>&#125;<br><span class="hljs-keyword">type</span> Task <span class="hljs-keyword">struct</span> &#123;<br>	TaskType   TaskType   <br>	TaskNum <span class="hljs-type">int</span>     <span class="hljs-comment">//任务的序号</span><br>	ReduceSum <span class="hljs-type">int</span> <span class="hljs-comment">//the sum of tasks needed to reduce</span><br>	MapSum <span class="hljs-type">int</span> <span class="hljs-comment">// the sum of tasks needed to map</span><br>	Filename   <span class="hljs-type">string</span>   <br>&#125;<br><br><span class="hljs-keyword">type</span> TaskArgs <span class="hljs-keyword">struct</span>&#123;<br>	TaskType   TaskType   <br>	TaskNum <span class="hljs-type">int</span><br>&#125;<br><br><span class="hljs-keyword">type</span> FinishArgs <span class="hljs-keyword">struct</span>&#123;<br>	Ts Task<br>&#125;<br><br><span class="hljs-keyword">type</span> TaskType <span class="hljs-type">int</span><br><br><span class="hljs-keyword">const</span> (<br>	MapTask TaskType = <span class="hljs-literal">iota</span><br>	ReduceTask<br>	CompleteTask    <br>)<br></code></pre></td></tr></table></figure>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Distributed-system/" class="category-chain-item">Distributed system</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/MIT6-824/" class="print-no-link">#MIT6.824</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>MIT6.824Lab1思路总结</div>
+      <div>http://example.com/2023/11/07/MIT6-824Lab1思路总结/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>MadFrey</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年11月7日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/09/19/%E7%AE%97%E6%B3%95%E9%A2%98%E5%9E%8B%E6%80%9D%E8%B7%AF%E6%80%BB%E7%BB%93/" title="算法题型思路总结">
+                        <span class="hidden-mobile">算法题型思路总结</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
