@@ -13,8 +13,6 @@
     
     <categories>
       
-      <category>Distributed system</category>
-      
       <category>lab</category>
       
     </categories>
@@ -23,6 +21,8 @@
     <tags>
       
       <tag>MIT6.824</tag>
+      
+      <tag>lab</tag>
       
     </tags>
     
@@ -65,7 +65,7 @@
     
     <categories>
       
-      <category>Lab</category>
+      <category>lab</category>
       
     </categories>
     
@@ -73,6 +73,8 @@
     <tags>
       
       <tag>MIT6.S081</tag>
+      
+      <tag>lab</tag>
       
     </tags>
     
