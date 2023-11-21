@@ -19,13 +19,13 @@
     <meta name="description" content="强烈推荐raft理解网站：Raft (thesecretlivesofdata.com) lab2A断断续续做了很久，主要也是花了很多时间去debug  lab2a是可以直接上手写的，只要看完了论文的这一部分，可能对写代码有影响的就是对go或者说实验的rpc包并不是很熟悉，没有使用协程去send心跳和投票 然后卡我最久的是election timeout协程，我一开始是没有使用state来表示三种">
 <meta property="og:type" content="article">
 <meta property="og:title" content="MIT6.824Lab2思路总结">
-<meta property="og:url" content="http://example.com/2023/11/18/MIT6-824Lab2%E6%80%9D%E8%B7%AF%E6%80%BB%E7%BB%93/index.html">
+<meta property="og:url" content="http://www.madfrey.top/2023/11/18/MIT6-824Lab2%E6%80%9D%E8%B7%AF%E6%80%BB%E7%BB%93/index.html">
 <meta property="og:site_name" content="MadFrey&#39;s Blog">
 <meta property="og:description" content="强烈推荐raft理解网站：Raft (thesecretlivesofdata.com) lab2A断断续续做了很久，主要也是花了很多时间去debug  lab2a是可以直接上手写的，只要看完了论文的这一部分，可能对写代码有影响的就是对go或者说实验的rpc包并不是很熟悉，没有使用协程去send心跳和投票 然后卡我最久的是election timeout协程，我一开始是没有使用state来表示三种">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/MadFrey/homework.img/155533.png">
 <meta property="article:published_time" content="2023-11-18T09:43:16.000Z">
-<meta property="article:modified_time" content="2023-11-18T11:25:09.359Z">
+<meta property="article:modified_time" content="2023-11-21T13:18:21.981Z">
 <meta property="article:author" content="John Doe">
 <meta property="article:tag" content="MIT6.824">
 <meta property="article:tag" content="lab">
@@ -74,7 +74,7 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml","include_content_in_search":true};
+    var CONFIG = {"hostname":"www.madfrey.top","root":"/","version":"1.9.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml","include_content_in_search":true};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
@@ -242,7 +242,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          2.6k 字
+          8.7k 字
         
       </span>
     
@@ -253,7 +253,7 @@
         
         
         
-          23 分钟
+          73 分钟
         
       </span>
     
@@ -315,6 +315,77 @@
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">if</span> reply.Votegranted &#123;<br>										*count +=<span class="hljs-number">1</span>  <br>									<br>										fmt.Println(<span class="hljs-string">&quot;[count num]&quot;</span>,*count,rf.me)<br>										<span class="hljs-keyword">if</span> *count &gt;<span class="hljs-built_in">len</span>(rf.peers)/<span class="hljs-number">2</span>&#123;<br>											<span class="hljs-keyword">if</span> rf.currentTerm == args.Term &#123;  <span class="hljs-comment">//解决延迟票</span><br>												rf.isleader = <span class="hljs-literal">true</span><br>												rf.state = Leader<br>												fmt.Println(<span class="hljs-string">&quot;[election leader]&quot;</span>,rf.me)<br>												<span class="hljs-comment">//发送心跳包，告知已经选上leader</span><br>												args := &amp;AppendEntriesArgs&#123;Term:rf.currentTerm,LeaderId: rf.me&#125;<br>												reply := &amp;AppendEntriesReply&#123;&#125;<br>												rf.sendAppendEntries(args ,reply)<br>											&#125;<br>										&#125;<br>								&#125;<br></code></pre></td></tr></table></figure>
 
 <p>只要选票大于1&#x2F;2就会选为leader，所以这就会有一个问题就是如果有延迟的话，怎么样才能避免剩下的选票影响下一次的选举。这里直接使用逻辑时间term来避免这个问题</p>
+<h2 id="Lab2B"><a href="#Lab2B" class="headerlink" title="Lab2B"></a>Lab2B</h2><p>做着感觉难度还行，debug弄了很久（在crash部分）</p>
+<p>难点在怎么处理leader和follower出现故障的问题</p>
+<p>一般来说最可能通不过的是backup那个测试点，其他测试点如果按照论文的实现来的话完完全全是没问题的（当然基于论文实现的raft还有很多优化可以做，这个等后面再说）</p>
+<p>记得初始化 rf.applyCh &#x3D; applyCh，所有提交后的数据都要输入管道，实验的检测将会从每个server的channel中取出数据，核对对应index的command是否相同</p>
+<p>我debug有遇到过前面一个测试点通不过的情况，问题出在发送appendentries的时候，传递的是args和reply的引用，这是非常容易导致错误的，随后重新传参后通过测试点</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(rf *Raft)</span></span> sendAppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) &#123;<br>	<span class="hljs-comment">//发给所有的node</span><br>	<span class="hljs-keyword">if</span> rf.killed() &#123;<br>		<span class="hljs-keyword">return</span><br>	&#125;<br>	CommitSum := <span class="hljs-number">1</span><br>	<span class="hljs-keyword">for</span> i, v := <span class="hljs-keyword">range</span> rf.peers &#123;<br>		<span class="hljs-keyword">if</span> i == rf.me &#123;<br>			<span class="hljs-keyword">continue</span><br>		&#125;<br>		<span class="hljs-comment">//心跳也要起协程发</span><br>		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(v *labrpc.ClientEnd, i <span class="hljs-type">int</span>, CommitSum *<span class="hljs-type">int</span>, args AppendEntriesArgs, reply AppendEntriesReply)</span></span> &#123;<br>			args.LeaderCommit = rf.commitIndex<br>			<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(rf.log) != <span class="hljs-number">0</span> &amp;&amp; rf.nextIndex[i] != <span class="hljs-built_in">len</span>(rf.log) &#123;<br>				<span class="hljs-keyword">if</span> rf.nextIndex[i] == <span class="hljs-number">0</span> &#123;<br>					args.Entries = rf.log <span class="hljs-comment">//nextIndex[i] 是已经存储的长度，即最后一个元素的index加1</span><br>					args.PrevLogIndex = rf.nextIndex[i] - <span class="hljs-number">1</span><br>				&#125; <span class="hljs-keyword">else</span> &#123;<br>					args.Entries = rf.log[rf.nextIndex[i]:] <span class="hljs-comment">//nextIndex[i] 是已经存储的长度，即最后一个元素的index加1</span><br>					args.PrevLogIndex = rf.nextIndex[i] - <span class="hljs-number">1</span><br>					args.PrevLogTerm = rf.log[rf.nextIndex[i]<span class="hljs-number">-1</span>].Term<br>				&#125;<br>			&#125;<br>			<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(rf.log) != <span class="hljs-number">0</span> &amp;&amp; rf.nextIndex[i] == <span class="hljs-built_in">len</span>(rf.log) &#123;<br>				args.PrevLogIndex = rf.nextIndex[i] - <span class="hljs-number">1</span><br>				args.PrevLogTerm = rf.log[rf.nextIndex[i]<span class="hljs-number">-1</span>].Term<br>			&#125;<br>			fmt.Println(<span class="hljs-string">&quot;Raft.AppendEntries&quot;</span>, rf.nextIndex, args, i, rf.log, rf.commitIndex)<br>			ok := v.Call(<span class="hljs-string">&quot;Raft.AppendEntries&quot;</span>, &amp;args, &amp;reply)<br>			<span class="hljs-keyword">if</span> !ok &#123;<br>				ok = v.Call(<span class="hljs-string">&quot;Raft.AppendEntries&quot;</span>, &amp;args, &amp;reply)<br>			&#125;<br>			<span class="hljs-keyword">if</span> ok &#123;<br>				rf.mu.Lock()<br>				<span class="hljs-keyword">defer</span> rf.mu.Unlock()<br><br>				<span class="hljs-keyword">if</span> reply.Success &#123;<br>					<span class="hljs-comment">//关于commit 持久化</span><br>					<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(args.Entries) == <span class="hljs-number">0</span> &#123; <span class="hljs-comment">//heartbeat</span><br>						<span class="hljs-keyword">return</span><br>					&#125;<br><br>					rf.nextIndex[i] = <span class="hljs-built_in">len</span>(rf.log)<br>					*CommitSum++<br><br>					<span class="hljs-keyword">if</span> *CommitSum &gt;= <span class="hljs-built_in">len</span>(rf.peers)/<span class="hljs-number">2</span>+<span class="hljs-number">1</span> &#123; <span class="hljs-comment">//commit</span><br>						*CommitSum = <span class="hljs-number">0</span><br>						<span class="hljs-keyword">for</span> rf.lastApplied &lt; <span class="hljs-built_in">len</span>(rf.log) &#123;<br>							rf.lastApplied++<br>							aMsg := ApplyMsg&#123;<br>								CommandValid: <span class="hljs-literal">true</span>,<br>								Command:      rf.log[rf.lastApplied<span class="hljs-number">-1</span>].Command,<br>								CommandIndex: rf.lastApplied,<br>							&#125;<br>							rf.applyCh &lt;- aMsg<br>							rf.commitIndex = rf.lastApplied<br>						&#125;<br>					&#125;<br><br>				&#125; <span class="hljs-keyword">else</span> &#123; <span class="hljs-comment">//如果对不上日志，那么就重新发logentries?直到对上 还是说等待下一个心跳</span><br><br>					<span class="hljs-keyword">if</span> reply.Term &gt; rf.currentTerm &#123; <span class="hljs-comment">//如果leader的term小于某个节点，那么会强行提升term与领先一致，变为follower，解决离群节点重恢复term过大的问题</span><br>						rf.currentTerm = reply.Term<br>						rf.votedFor = <span class="hljs-number">-1</span><br>						rf.state = Follower<br>						rf.isleader = <span class="hljs-literal">false</span><br>						<span class="hljs-keyword">return</span><br>					&#125;<br>					rf.nextIndex[i] = rf.nextIndex[i] - <span class="hljs-number">1</span><br>				&#125;<br>			&#125;<br>		&#125;(v, i, &amp;CommitSum, *args, *reply)<br><br>	&#125;<br><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>我个人是尽量还原论文的描述，我的appendentries当logs为空时为心跳或者commit信息，当log不为空时，为appendentries信息，这里需要小心处理，如果你backup测试点过不了，那很可能是因为你崩溃后reconnect解决一致性问题没有做好，我在这块花了挺久时间才debug出来，最后加上<code>args.PrevLogTerm = rf.log[rf.nextIndex[i]-1].Term</code>后，成功通过所有测试点</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(rf.log) != <span class="hljs-number">0</span> &amp;&amp; rf.nextIndex[i] == <span class="hljs-built_in">len</span>(rf.log) &#123;<br>		args.PrevLogIndex = rf.nextIndex[i] - <span class="hljs-number">1</span><br>		args.PrevLogTerm = rf.log[rf.nextIndex[i]<span class="hljs-number">-1</span>].Term<br>	&#125;<br></code></pre></td></tr></table></figure>
+
+<p>就是一个小问题但是却花了那么时间才debug出来，确实挺恶心的</p>
+<p>但是虽然我们最后知道了这就是一个小疏忽导致的，但是在debug的时候，因为不知道问题出在哪，造成最终结果不正确的因素有很多，我们得一个个排除，而用来排除的时间我认为是debug中花费时间最多的，想要最后解决问题，就得耐下性子来一个一个排查</p>
+<p>我认为lab2b的难点就在于解决leader和follower crash的问题，所以不止要改appendentries，还得改选举</p>
+<p>根据论文所说，如果一个candidate 光term高也不能直接把票投给他，还得看他的日志是否满足要求</p>
+<p>如果candidate 的日志的最新一个entry的term要比当前投票者的最新term要新，那么就投票给他</p>
+<p>如果term一样新，那么我们再看index，如果candidate的index比投票者的最新log的index长，那么投票给他，其他情况都不投票给他</p>
+<p>如果一个测试点因为网络问题变为candidate ，并且最后重新连回cluster的时候term非常高会怎么样？</p>
+<p>如果是收到candidate投票请求的follower还是发心跳到了candidate的leader，论文要求他们都要同步拉升到相同的term，所以最后不会因为离群的节点他term很高而导致他成为leader，这也是其中一个测试点测试的</p>
+<p>而要通过测试点非常简单，只要在投票之前先经过logvote检测就行</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(rf *Raft)</span></span> RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) &#123; <span class="hljs-comment">//candidate 在选举期间发起</span><br>    <span class="hljs-comment">// Your code here (2A, 2B).</span><br>    <span class="hljs-comment">//进行投票 , 同步term，如果candidate的term比自己大</span><br>    <span class="hljs-comment">//会重置election timeout</span><br><br>    <span class="hljs-keyword">if</span> rf.killed() &#123;<br>       reply.Votegranted = <span class="hljs-literal">false</span><br>       <span class="hljs-keyword">return</span><br>    &#125;<br>    rf.mu.Lock()<br>    <span class="hljs-keyword">defer</span> rf.mu.Unlock()<br><br>    <span class="hljs-comment">//当出现有多个candidate的情况，怎么根据任期来解决这个问题</span><br>    <span class="hljs-keyword">if</span> args.Term &gt; rf.currentTerm &#123; <span class="hljs-comment">//什么情况下会有相同的term，同为candidate或着接收到vote的follower</span><br>       rf.IsGetHeartbeat &lt;- <span class="hljs-number">0</span><br>       rf.isleader = <span class="hljs-literal">false</span><br>       rf.state = Follower<br>       rf.votedFor = <span class="hljs-number">-1</span><br>       rf.currentTerm = args.Term<br>       <span class="hljs-comment">//先看log再投票</span><br>       lv := rf.logVote(args)<br>       <span class="hljs-keyword">if</span> lv &#123;<br>          rf.votedFor = args.CandidateId<br>          reply.Votegranted = <span class="hljs-literal">true</span><br>       &#125;<br><br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>       <span class="hljs-keyword">if</span> args.Term == rf.currentTerm &#123; <span class="hljs-comment">//如果是投给的那个人来要票，那就再给他投一次</span><br>          lv := rf.logVote(args)<br>          <span class="hljs-keyword">if</span> (rf.votedFor == args.CandidateId || rf.votedFor == <span class="hljs-number">-1</span>) &amp;&amp; lv &#123;<br>             rf.IsGetHeartbeat &lt;- <span class="hljs-number">0</span><br>             rf.votedFor = args.CandidateId<br>             reply.Votegranted = <span class="hljs-literal">true</span><br><br>          &#125;<br><br>       &#125; <span class="hljs-keyword">else</span> &#123;<br>          reply.Votegranted = <span class="hljs-literal">false</span><br><br>       &#125;<br><br>    &#125;<br><br>    reply.Term = rf.currentTerm<br>    <span class="hljs-keyword">return</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(rf *Raft)</span></span> logVote(args *RequestVoteArgs) <span class="hljs-type">bool</span> &#123;<br>    <span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(rf.log) == <span class="hljs-number">0</span> &#123;<br>       <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span><br>    &#125;<br>    <span class="hljs-keyword">if</span> rf.log[<span class="hljs-built_in">len</span>(rf.log)<span class="hljs-number">-1</span>].Term &gt; args.LastLogTerm &#123;<br>       <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span><br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>       <span class="hljs-keyword">if</span> rf.log[<span class="hljs-built_in">len</span>(rf.log)<span class="hljs-number">-1</span>].Term == args.LastLogTerm &amp;&amp; <span class="hljs-built_in">len</span>(rf.log)<span class="hljs-number">-1</span> &gt; args.LastLogIndex &#123;<br>          <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span><br>       &#125;<br>    &#125;<br>    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+<p>最后还得还得解决的问题就是新的leader上台后的初始化问题</p>
+<p>选上leader后，会立即发送一次心跳（我是这么写的），发送参数：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs go">args := &amp;AppendEntriesArgs&#123;<br>    Term: rf.currentTerm,<br>    LeaderId:     rf.me,<br>    PrevLogIndex: <span class="hljs-built_in">len</span>(rf.log) - <span class="hljs-number">1</span>,<br>    PrevLogTerm:  <span class="hljs-number">0</span>,<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这里我初始化了但没有用matchindex</p>
+<blockquote>
+<p>matchIndex 它记录了每个 Follower 节点已经复制了 Leader 节点的日志条目的最高索引。matchIndex 的作用是帮助 Leader 节点确定哪些日志条目已经被过半数的 Follower 节点复制，从而可以更新自己的 commitIndex，并将已提交的日志条目应用到状态机上。</p>
+</blockquote>
+<p>因为我已经用其他等效的方法实现了commit记录，就不需要再使用matchindex了</p>
+<p>其中无论用了matchindex还是没用matchindex都要关注的一点就是第一次的试探心跳</p>
+<p>因为新选上来的leader一开始是不知道每个server的log index和commit 进度的</p>
+<p>所以第一次的心跳和普通的心跳还真就不一样，一定要好好处理，不然backup等测试点还是可能过不了的。第一次心跳参数设置如上所述，因为第一次心跳很可能leader的log为空，这个情况也需要特殊处理一下因为如果你的log为空的话，比如<code>args.PrevLogTerm = rf.log[rf.nextIndex[i]-1].Term</code> 是会报错的</p>
+<p>最后lab2b做下来感触颇深的就是，如果有不懂的或者思路不清晰的，建议再回去多看几遍论文，理解透彻了也就会做了</p>
+<p>对了，做lab2b的时候发现raft有很多可以优化的地方（在工业届比如etcd和tikv，他们的raft都是优化过的），这里插个眼，后面完成所有lab后再回来做优化</p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/639480562">Raft 必备的优化手段（一）：Leader Election 篇 - 知乎 (zhihu.com)</a></p>
+<blockquote>
+<ul>
+<li><p>Read Index</p>
+</li>
+<li><p>Lease Read</p>
+</li>
+<li><p><em>Pre Vote</em></p>
+</li>
+<li><p>Nuraft ：Priority election</p>
+</li>
+<li><p>Leader change</p>
+</li>
+<li><p>Leadership Expiration</p>
+</li>
+</ul>
+</blockquote>
+<ul>
+<li><p><a target="_blank" rel="noopener" href="https://cn.pingcap.com/blog/tikv-source-code-reading-1/">日志复制的优化：为了提高日志复制的效率和吞吐量，Raft 可以使用 batch，pipeline，parallel append，asynchronous apply 等机制来减少网络和磁盘的开销</a><a target="_blank" rel="noopener" href="https://cn.pingcap.com/blog/tikv-source-code-reading-1/">4</a><a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1394643">5</a><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/623294589">6</a>。</p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/25735592">读操作的优化：为了保证读操作的线性一致性和高性能，Raft 可以使用 read index，lease read，local read 等机制来减少读操作的延迟和消息开销</a><a target="_blank" rel="noopener" href="https://bing.com/search?q=raft+%E4%BC%98%E5%8C%96+etcd+tikv">1</a><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/25735592">2</a><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/639480562">3</a> 。</p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://cn.pingcap.com/blog/tikv-source-code-reading-1/">快照的优化：为了减少快照的生成和传输的开销，Raft 可以使用 SST snapshot，delta snapshot，streaming snapshot 等机制来提高快照的效率</a><a target="_blank" rel="noopener" href="https://cn.pingcap.com/blog/tikv-source-code-reading-1/">4</a> 。</p>
+</li>
+</ul>
+<blockquote>
+<p>在 etcd 和 tikv 上，Raft 的优化主要体现在以下几个方面：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/25735592">etcd 使用了 pre-vote，check quorum，read index，lease read，SST snapshot 等机制来优化 Raft 的选举，读写，快照等功能</a><a target="_blank" rel="noopener" href="https://bing.com/search?q=raft+%E4%BC%98%E5%8C%96+etcd+tikv">1</a><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/25735592">2</a><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/639480562">3</a><a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1394643">5</a> 。</li>
+<li><a target="_blank" rel="noopener" href="https://cn.pingcap.com/blog/tikv-source-code-reading-1/">tikv 使用了 pre-vote，check quorum，batch，pipeline，parallel append，asynchronous apply，local read，SST snapshot，delta snapshot，streaming snapshot 等机制来优化 Raft 的选举，读写，快照等功能</a><a target="_blank" rel="noopener" href="https://cn.pingcap.com/blog/tikv-source-code-reading-1/">4</a><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/623294589">6</a> 。</li>
+</ul>
+</blockquote>
 
                 
               </div>
@@ -363,7 +434,7 @@
   <div class="license-box my-3">
     <div class="license-title">
       <div>MIT6.824Lab2思路总结</div>
-      <div>http://example.com/2023/11/18/MIT6-824Lab2思路总结/</div>
+      <div>http://www.madfrey.top/2023/11/18/MIT6-824Lab2思路总结/</div>
     </div>
     <div class="license-meta">
       
