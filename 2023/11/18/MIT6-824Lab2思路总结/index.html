@@ -25,7 +25,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/MadFrey/homework.img/155533.png">
 <meta property="article:published_time" content="2023-11-18T09:43:16.000Z">
-<meta property="article:modified_time" content="2023-11-21T13:18:21.981Z">
+<meta property="article:modified_time" content="2023-12-18T12:18:57.545Z">
 <meta property="article:author" content="John Doe">
 <meta property="article:tag" content="MIT6.824">
 <meta property="article:tag" content="lab">
@@ -242,7 +242,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          8.7k 字
+          15k 字
         
       </span>
     
@@ -253,7 +253,7 @@
         
         
         
-          73 分钟
+          124 分钟
         
       </span>
     
@@ -354,6 +354,40 @@
 <p>所以第一次的心跳和普通的心跳还真就不一样，一定要好好处理，不然backup等测试点还是可能过不了的。第一次心跳参数设置如上所述，因为第一次心跳很可能leader的log为空，这个情况也需要特殊处理一下因为如果你的log为空的话，比如<code>args.PrevLogTerm = rf.log[rf.nextIndex[i]-1].Term</code> 是会报错的</p>
 <p>最后lab2b做下来感触颇深的就是，如果有不懂的或者思路不清晰的，建议再回去多看几遍论文，理解透彻了也就会做了</p>
 <p>对了，做lab2b的时候发现raft有很多可以优化的地方（在工业届比如etcd和tikv，他们的raft都是优化过的），这里插个眼，后面完成所有lab后再回来做优化</p>
+<hr>
+<p>11.23记录</p>
+<p>在给lab2c加上presist后lab2b开始通不过，目前认为是加上了lab2b导致处理时间变长，最后导致心跳超时等各种问题</p>
+<blockquote>
+<p>目测解决方法应该是实现 增量返回term优化</p>
+</blockquote>
+<p>测试lab2c的时候发现又出buglab2b</p>
+<p>遂回来重新改bug（虽然当时做的时候测了大概有10次左右都pass了，我就认为没问题了&gt;_&lt;）</p>
+<p>bug如下 TestFailAgree2B：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs shell">2 send heartbeat entry:[&#123;1 105&#125; &#123;1 106&#125; &#123;13 106&#125;] PrevLogIndex 3 PrevLogTerm 1]<br>2 send heartbeat entry:[&#123;1 103&#125; &#123;1 104&#125; &#123;1 105&#125; &#123;1 106&#125; &#123;13 106&#125;] PrevLogIndex 1 PrevLogTerm 1]<br>0 get heartbeat [&#123;1 101&#125;]<br>1 get heartbeat [&#123;1 101&#125; &#123;1 102&#125; &#123;1 103&#125;]<br>1 get heartbeat [&#123;1 101&#125; &#123;1 102&#125; &#123;1 103&#125;]<br>2 send heartbeat entry:[&#123;1 103&#125; &#123;1 104&#125; &#123;1 105&#125; &#123;1 106&#125; &#123;13 106&#125;] PrevLogIndex 1 PrevLogTerm 1]<br>1 get heartbeat [&#123;1 101&#125;]<br>2 send heartbeat entry:[&#123;1 101&#125; &#123;1 102&#125; &#123;1 103&#125; &#123;1 104&#125; &#123;1 105&#125; &#123;1 106&#125; &#123;13 106&#125;] PrevLogIndex -1 PrevLogTerm 0]<br>0 get heartbeat [&#123;1 101&#125; &#123;1 101&#125; &#123;1 102&#125; &#123;1 103&#125; &#123;1 104&#125; &#123;1 105&#125; &#123;1 106&#125; &#123;13 106&#125;]<br></code></pre></td></tr></table></figure>
+
+<p>发给0的 PrevLogIndex突然从1跳变到了-1</p>
+<p>目前加锁解决 </p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(v *labrpc.ClientEnd, i <span class="hljs-type">int</span>, CommitSum *<span class="hljs-type">int</span>, args AppendEntriesArgs, reply AppendEntriesReply)</span></span> &#123;<br>			subMu.Lock()<br>			args.LeaderCommit = rf.commitIndex<br>			<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(rf.log) != <span class="hljs-number">0</span> &amp;&amp; rf.nextIndex[i] != <span class="hljs-built_in">len</span>(rf.log) &#123;<br>				<span class="hljs-keyword">if</span> rf.nextIndex[i] == <span class="hljs-number">0</span> &#123; <span class="hljs-comment">// no problem</span><br>					args.Entries = rf.log <span class="hljs-comment">//nextIndex[i] 是已经存储的长度，即最后一个元素的index加1</span><br>					args.PrevLogIndex = rf.nextIndex[i] - <span class="hljs-number">1</span><br>				&#125; <span class="hljs-keyword">else</span> &#123;<br>					args.Entries = rf.log[rf.nextIndex[i]:] <span class="hljs-comment">//nextIndex[i] 是已经存储的长度，即最后一个元素的index加1</span><br>					args.PrevLogIndex = rf.nextIndex[i] - <span class="hljs-number">1</span><br>					args.PrevLogTerm = rf.log[rf.nextIndex[i]<span class="hljs-number">-1</span>].Term<br>				&#125;<br>			&#125;<br>			<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(rf.log) != <span class="hljs-number">0</span> &amp;&amp; rf.nextIndex[i] == <span class="hljs-built_in">len</span>(rf.log) &#123;<br>				args.PrevLogIndex = rf.nextIndex[i] - <span class="hljs-number">1</span><br>				args.PrevLogTerm = rf.log[rf.nextIndex[i]<span class="hljs-number">-1</span>].Term<br>			&#125;<br>			subMu.Unlock()<br>			fmt.Printf(<span class="hljs-string">&quot;%d send heartbeat entry:%v PrevLogIndex %d PrevLogTerm %d]\n&quot;</span>, rf.me, args.Entries, args.PrevLogIndex, args.PrevLogTerm)<br>			ok := v.Call(<span class="hljs-string">&quot;Raft.AppendEntries&quot;</span>, &amp;args, &amp;reply)<br>			<span class="hljs-keyword">for</span> !ok &#123;<br>				ok = v.Call(<span class="hljs-string">&quot;Raft.AppendEntries&quot;</span>, &amp;args, &amp;reply)<br>			&#125;<br>			<span class="hljs-keyword">if</span> ok &#123;<br>				rf.mu.Lock()<br>				<span class="hljs-keyword">defer</span> rf.mu.Unlock()<br></code></pre></td></tr></table></figure>
+
+<p>会有一个很奇怪的问题，我自己单独运行test没什么问题，但是一到一起运行要不就是收不到start，要不就是rpc调用不起。应该是处理的太慢了 - -&gt;上面加锁导致心跳处理串行化</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs shell">0 send heartbeat entry:[&#123;1 106&#125;] PrevLogIndex 4 PrevLogTerm 1]<br>1 get heartbeat [&#123;1 101&#125;]<br>0 send heartbeat entry:[] PrevLogIndex 5 PrevLogTerm 1]<br>2 get heartbeat [&#123;1 101&#125; &#123;1 102&#125; &#123;1 103&#125; &#123;1 104&#125; &#123;1 105&#125;]<br>0 send heartbeat entry:[&#123;1 106&#125;] PrevLogIndex 4 PrevLogTerm 1]<br>1 get heartbeat [&#123;1 101&#125;]<br>0 send heartbeat entry:[] PrevLogIndex 5 PrevLogTerm 1]<br>2 get heartbeat [&#123;1 101&#125; &#123;1 102&#125; &#123;1 103&#125; &#123;1 104&#125; &#123;1 105&#125;]<br>[candidate] 1 10 2023-11-24 08:11:36.221273525 +0800 CST m=+17.869143605<br></code></pre></td></tr></table></figure>
+
+
+
+<p>当0，和1都有日志并且提交了时，此时2没有日志且无提交，此时切换leader，2没有进行replication</p>
+<p>2的nextindex变为了1</p>
+<p>如果有节点的log提交了但是还没同步到其他的节点上，就开始重新选举了，这个时候应该怎么选？</p>
+<p> <a target="_blank" rel="noopener" href="https://www.zhihu.com/question/357207584">(29 封私信 &#x2F; 75 条消息) raft协议，leader在commit了一条日志后，立刻挂了，那其他节点如何处理这条日志？ - 知乎 (zhihu.com)</a></p>
+<p>TestConcurrentStarts2B term变化太频繁了</p>
+<p> FAIL: TestBackup2B (37.12s)<br>    config.go:600: one(8635910386943868591) failed to reach agreement</p>
+<p>before send heartbeat 1 [{1 101}]<br>1 send heartbeat entry:[] PrevLogIndex 0 PrevLogTerm 1 to 2<br>before send heartbeat 1 [{1 101}]<br>panic: runtime error: index out of range [1] with length 1</p>
+<p>TestFailAgree2B选不出leader来 </p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><code class="hljs shell">before send heartbeat 1 [&#123;1 101&#125; &#123;2 102&#125; &#123;2 103&#125;] to 2<br>1 send heartbeat entry:[&#123;2 102&#125; &#123;2 103&#125;] PrevLogIndex 0 PrevLogTerm 1 to 2<br>before send heartbeat 1 [&#123;1 101&#125; &#123;2 102&#125; &#123;2 103&#125;] to 0<br>1 send heartbeat entry:[] PrevLogIndex 2 PrevLogTerm 2 to 0<br>[start] new log [&#123;1 101&#125; &#123;2 102&#125; &#123;2 103&#125; &#123;2 104&#125;]<br>[candidate] 0 3 2023-11-26 07:52:01.045145526 +0800 CST m=+16.071576847<br>1 send vote false<br>[candidate] 2 8 2023-11-26 07:52:01.106842539 +0800 CST m=+16.133273850<br>[nextIndex] 0 3 3<br>[candidate] 1 4 2023-11-26 07:52:01.291407124 +0800 CST m=+16.317838435<br>[candidate] 0 4 2023-11-26 07:52:01.338668275 +0800 CST m=+16.365099586<br>1 send vote false<br>0 send vote false<br>[candidate] 2 9 2023-11-26 07:52:01.367998168 +0800 CST m=+16.394429489<br>[candidate] 2 10 2023-11-26 07:52:01.592073742 +0800 CST m=+16.618505053<br>[candidate] 1 5 2023-11-26 07:52:01.627950022 +0800 CST m=+16.654381333<br>0 send vote false<br>[candidate] 0 5 2023-11-26 07:52:01.648159766 +0800 CST m=+16.674591087<br>[candidate] 2 11 2023-11-26 07:52:01.792065309 +0800 CST m=+16.818496640<br>1 send vote false<br>[candidate] 0 6 2023-11-26 07:52:01.891437687 +0800 CST m=+16.917868998<br>[candidate] 1 6 2023-11-26 07:52:01.919971067 +0800 CST m=+16.946402379<br>0 send vote false<br>1 send vote false<br>[candidate] 0 7 2023-11-26 07:52:02.047624436 +0800 CST m=+17.074055747<br>1 send vote false<br>[candidate] 2 12 2023-11-26 07:52:02.110598063 +0800 CST m=+17.137029374<br>[candidate] 0 8 2023-11-26 07:52:02.276945957 +0800 CST m=+17.303377268<br>1 send vote false<br>[candidate] 2 13 2023-11-26 07:52:02.422322676 +0800 CST m=+17.448753987<br>[candidate] 0 9 2023-11-26 07:52:02.507124463 +0800 CST m=+17.533555774<br>1 send vote false<br>[candidate] 2 14 2023-11-26 07:52:02.676923361 +0800 CST m=+17.703354672<br>[candidate] 0 10 2023-11-26 07:52:02.752133458 +0800 CST m=+17.778564769<br>1 send vote false<br>[candidate] 2 15 2023-11-26 07:52:02.835639606 +0800 CST m=+17.862070917<br>[candidate] 1 11 2023-11-26 07:52:02.940533733 +0800 CST m=+17.966965044<br></code></pre></td></tr></table></figure>
+
+
+
+<p>如果最后通过的时间大于了1分钟，调小心跳和选举时间即可</p>
+<p>修改完Lab2C的bug后，buckup又有概率过不去了&gt;_&lt;</p>
 <p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/639480562">Raft 必备的优化手段（一）：Leader Election 篇 - 知乎 (zhihu.com)</a></p>
 <blockquote>
 <ul>
@@ -386,6 +420,34 @@
 <li><a target="_blank" rel="noopener" href="https://cn.pingcap.com/blog/tikv-source-code-reading-1/">tikv 使用了 pre-vote，check quorum，batch，pipeline，parallel append，asynchronous apply，local read，SST snapshot，delta snapshot，streaming snapshot 等机制来优化 Raft 的选举，读写，快照等功能</a><a target="_blank" rel="noopener" href="https://cn.pingcap.com/blog/tikv-source-code-reading-1/">4</a><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/623294589">6</a> 。</li>
 </ul>
 </blockquote>
+<h2 id="Lab2C"><a href="#Lab2C" class="headerlink" title="Lab2C"></a>Lab2C</h2><p><img src="D:\blogs\hexo-blog\source_posts\MIT6-824Lab2思路总结.assets\image-20231127091146715.png" srcset="/img/loading.gif" lazyload alt="image-20231127091146715"></p>
+<p>当一个节点有日志没提交，且和新leader的对应下标index相同时会有问题</p>
+<p>当有一个节点的日志提交了，但是崩溃了，换了另外一个leader，那个leader对应index也有日志，但是没有提交，此时会出现不一致的问题</p>
+<p>提交了非当前任期的日志</p>
+<p>如果leader向其他节点同步了日志，并且自己提交了，但是其他节点没有收到提交心跳就挂了，那么新上台的节点是否需要提交 - - -&gt; 因该是要提交的</p>
+<p>什么时候变成follower？ 当请求的term大于当前term的时候是肯定要变的，但当term等于当前term的时候呢</p>
+<p>当nextindex大于len(rf.log)时</p>
+<p>TestFigure8Unreliable2偶尔过不去</p>
+<p>目前看来有提交问题，因为crash可能导致nextindex不一样</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs stylus">rf<span class="hljs-selector-class">.nextIndex</span><span class="hljs-selector-attr">[i]</span> = args<span class="hljs-selector-class">.PrevLogIndex</span> + <span class="hljs-built_in">len</span>(args.Entries) + <span class="hljs-number">1</span> <span class="hljs-comment">//这样设置更加可靠安全</span><br></code></pre></td></tr></table></figure>
+
+
+
+<hr>
+<p>（期末复习，没时间写了，回来寒假写）</p>
+<h2 id="Lab2D"><a href="#Lab2D" class="headerlink" title="Lab2D"></a>Lab2D</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-comment">// in part 2D you&#x27;ll want to send other kinds of messages (e.g.,</span><br><span class="hljs-comment">// snapshots) on the applyCh, but set CommandValid to false for these</span><br><span class="hljs-comment">// other uses.</span><br><span class="hljs-keyword">type</span> ApplyMsg <span class="hljs-keyword">struct</span> &#123;<br>    CommandValid <span class="hljs-type">bool</span><br>    Command      <span class="hljs-keyword">interface</span>&#123;&#125;<br>    CommandIndex <span class="hljs-type">int</span><br><br>    <span class="hljs-comment">// For 2D:</span><br>    SnapshotValid <span class="hljs-type">bool</span><br>    Snapshot      []<span class="hljs-type">byte</span> <span class="hljs-comment">// important</span><br>    SnapshotTerm  <span class="hljs-type">int</span><br>    SnapshotIndex <span class="hljs-type">int</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+<p>Election timeout 和sendappendentries的锁争用问题</p>
+<p>send为什么要加锁 - -&gt;send 和  commit协程之间的问题</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs stylus">rf<span class="hljs-selector-class">.mu</span><span class="hljs-selector-class">.Unlock</span>()<br>rf<span class="hljs-selector-class">.applyCh</span> &lt;- msg<br>rf<span class="hljs-selector-class">.mu</span><span class="hljs-selector-class">.Lock</span>()<br></code></pre></td></tr></table></figure>
+
+
+
+<p>提交并发问题 </p>
+<p>多个协程</p>
+<p>选举问题，选不出leader</p>
 
                 
               </div>
@@ -489,6 +551,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2023/12/18/%E6%B5%85%E5%85%A5%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/" title="浅入嵌入式开发">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">浅入嵌入式开发</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">

@@ -25,7 +25,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/MadFrey/homework.img/22-1.png">
 <meta property="article:published_time" content="2023-09-19T12:18:08.000Z">
-<meta property="article:modified_time" content="2023-11-17T09:30:50.757Z">
+<meta property="article:modified_time" content="2023-11-23T08:11:05.207Z">
 <meta property="article:author" content="John Doe">
 <meta property="article:tag" content="剑指offer">
 <meta name="twitter:card" content="summary_large_image">
@@ -241,7 +241,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          34k 字
+          36k 字
         
       </span>
     
@@ -252,7 +252,7 @@
         
         
         
-          285 分钟
+          302 分钟
         
       </span>
     
@@ -452,6 +452,33 @@
 <p>一开始从第5题直接跳到516题来的，以为题目意思基本相同，只是这题是求最长回文串的长度而已</p>
 <p>但后面发现这题求的是“序列”的长度，所相对来讲更加简单</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">longestPalindromeSubseq</span><span class="hljs-params">(s <span class="hljs-type">string</span>)</span></span> <span class="hljs-type">int</span> &#123;<br><br>    dp := <span class="hljs-built_in">make</span>([][]<span class="hljs-type">int</span>, <span class="hljs-built_in">len</span>(s))<br>    <span class="hljs-keyword">for</span> i := <span class="hljs-keyword">range</span> dp &#123;<br>        dp[i] = <span class="hljs-built_in">make</span>([]<span class="hljs-type">int</span>, <span class="hljs-built_in">len</span>(s))<br>    &#125;<br>    <span class="hljs-keyword">for</span> a:= <span class="hljs-built_in">len</span>(s)<span class="hljs-number">-1</span> ;a&gt;=<span class="hljs-number">0</span>;a-- &#123;<br>        dp[a][a] = <span class="hljs-number">1</span><br>        <span class="hljs-keyword">for</span> b := a+<span class="hljs-number">1</span>;b&lt;<span class="hljs-built_in">len</span>(s);b++ &#123;<br><br>        <span class="hljs-keyword">if</span> s[a] == s[b] &#123;<br>            dp[a][b] =  dp[a+<span class="hljs-number">1</span>][b<span class="hljs-number">-1</span>] + <span class="hljs-number">2</span> <br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>             dp[a][b] =  max(dp[a+<span class="hljs-number">1</span>][b],dp[a][b<span class="hljs-number">-1</span>])<br>        &#125;<br>        &#125; <br>    &#125;<br>    <span class="hljs-keyword">return</span>  dp[<span class="hljs-number">0</span>][<span class="hljs-built_in">len</span>(s)<span class="hljs-number">-1</span>]<br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+<h3 id="最长公共子序列"><a href="#最长公共子序列" class="headerlink" title="最长公共子序列"></a>最长公共子序列</h3><p>题目链接 ： <a target="_blank" rel="noopener" href="https://leetcode.cn/problems/longest-common-subsequence/">最长公共子序列</a></p>
+<p>子序列问题，只需要满足顺序是一样的即可，不需要保证连续</p>
+<p>体会感觉还不是很深刻，回去看看灵神的视频再理解理解</p>
+<p>好的，这下理解了！</p>
+<p>i，j表示在text1的i，和text2的j之前的最长公共子序列是多少</p>
+<p>如果下标为i，和j对应的字母不相等，那么他的最长公共子序列就是i-1，j或者j-1，i对应的最长公共子序列，为什么没有i-1，j-1？看下图应该就懂了 –&gt;i-1，j-1已经被包含在内了</p>
+<p><img src="https://cdn.jsdelivr.net/gh/MadFrey/homework.img/Screenshot%202023-11-23%20100423.png" srcset="/img/loading.gif" lazyload></p>
+<p>然后是为什么text1[i] &#x3D;&#x3D; text[2] 时我们只需要让<code>ans[i-1][j-1]+1</code>就行？</p>
+<p>如果j与i-1之前的任何一个匹配上了，那么此时Lcs为m &#x3D; 【j,i-1】</p>
+<p>若j放弃匹配i-1之前的数，转而匹配i，那么因为j不匹配了，所以此时为【j-1，i-1】 &#x3D; m-1</p>
+<p>如果一开始j就没有任何i-1及其之前的数和他匹配，此时【j,i-1】 &#x3D; 【j-1,i-1】</p>
+<p>所以此时【i，j】 &#x3D; 【i-1,j-1】+1 </p>
+<p>j,i-1和j-1,i都同理</p>
+<p>综上可以得出结论text1[i] &#x3D;&#x3D; text[2]，只需要让LCS &#x3D; <code>ans[i-1][j-1]+1</code>就行</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">longestCommonSubsequence</span><span class="hljs-params">(text1 <span class="hljs-type">string</span>, text2 <span class="hljs-type">string</span>)</span></span> <span class="hljs-type">int</span> &#123;<br>	<span class="hljs-keyword">var</span> ans [][]<span class="hljs-type">int</span> = <span class="hljs-built_in">make</span>([][]<span class="hljs-type">int</span>, <span class="hljs-built_in">len</span>(text1))<br>	<span class="hljs-keyword">for</span> i := <span class="hljs-keyword">range</span> ans &#123;<br>		ans[i] = <span class="hljs-built_in">make</span>([]<span class="hljs-type">int</span>, <span class="hljs-built_in">len</span>(text2))<br>	&#125;<br>	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-built_in">len</span>(text1); i++ &#123;<br>		<span class="hljs-keyword">if</span> text1[i] == text2[<span class="hljs-number">0</span>] ||(i&gt;<span class="hljs-number">0</span> &amp;&amp;ans[i<span class="hljs-number">-1</span>][<span class="hljs-number">0</span>] == <span class="hljs-number">1</span>) &#123;<br>			ans[i][<span class="hljs-number">0</span>] = <span class="hljs-number">1</span><br>		&#125; <span class="hljs-keyword">else</span> &#123;<br>			ans[i][<span class="hljs-number">0</span>] = <span class="hljs-number">0</span><br>		&#125;<br>	&#125;<br>	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-built_in">len</span>(text2); i++ &#123;<br>		<span class="hljs-keyword">if</span> text1[<span class="hljs-number">0</span>] == text2[i] || (i&gt;<span class="hljs-number">0</span> &amp;&amp;ans[<span class="hljs-number">0</span>][i<span class="hljs-number">-1</span>]== <span class="hljs-number">1</span>) &#123;<br>			ans[<span class="hljs-number">0</span>][i] = <span class="hljs-number">1</span><br>		&#125; <span class="hljs-keyword">else</span> &#123;<br>			ans[<span class="hljs-number">0</span>][i] = <span class="hljs-number">0</span><br>		&#125;<br>	&#125;<br>	<span class="hljs-keyword">var</span> i <span class="hljs-type">int</span> = <span class="hljs-number">1</span><br>	<span class="hljs-keyword">for</span> ; i &lt; <span class="hljs-built_in">len</span>(text1); i++ &#123;<br>		<span class="hljs-keyword">for</span> j := <span class="hljs-number">1</span>; j != <span class="hljs-built_in">len</span>(text2); j++ &#123;<br>			<span class="hljs-keyword">if</span> text1[i] == text2[j] &#123;<br>				ans[i][j] = ans[i<span class="hljs-number">-1</span>][j<span class="hljs-number">-1</span>] + <span class="hljs-number">1</span><br>			&#125; <span class="hljs-keyword">else</span> &#123;<br>				ans[i][j] = max(ans[i<span class="hljs-number">-1</span>][j], ans[i][j<span class="hljs-number">-1</span>])<br>			&#125;<br>		&#125;<br><br>	&#125;<br><br>	<span class="hljs-keyword">return</span> ans[<span class="hljs-built_in">len</span>(text1)<span class="hljs-number">-1</span>][<span class="hljs-built_in">len</span>(text2)<span class="hljs-number">-1</span>]<br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+<h3 id="编辑距离"><a href="#编辑距离" class="headerlink" title="编辑距离"></a>编辑距离</h3><p>题目链接 ： <a target="_blank" rel="noopener" href="https://leetcode.cn/problems/edit-distance/">编辑距离</a></p>
+<p>等价替换</p>
+<p>给我好好分析下这题！</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">minDistance</span><span class="hljs-params">(word1 <span class="hljs-type">string</span>, word2 <span class="hljs-type">string</span>)</span></span> <span class="hljs-type">int</span> &#123;<br>	<span class="hljs-keyword">var</span> ans [][]<span class="hljs-type">int</span> = <span class="hljs-built_in">make</span>([][]<span class="hljs-type">int</span>, <span class="hljs-built_in">len</span>(word2)+<span class="hljs-number">1</span>)<br>	<span class="hljs-keyword">for</span> i := <span class="hljs-keyword">range</span> ans &#123;<br>		ans[i] = <span class="hljs-built_in">make</span>([]<span class="hljs-type">int</span>, <span class="hljs-built_in">len</span>(word1)+<span class="hljs-number">1</span>)<br>	&#125;<br>	<span class="hljs-keyword">for</span> i := <span class="hljs-number">1</span>; i &lt;= <span class="hljs-built_in">len</span>(word1); i++ &#123;<br>		ans[<span class="hljs-number">0</span>][i] = i <br>	&#125;<br>	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-built_in">len</span>(word2); i++ &#123;<br>		ans[i+<span class="hljs-number">1</span>][<span class="hljs-number">0</span>] = i + <span class="hljs-number">1</span><br>		<span class="hljs-keyword">for</span> j := <span class="hljs-number">0</span>; j &lt; <span class="hljs-built_in">len</span>(word1); j++ &#123;<br>			<span class="hljs-keyword">if</span> word2[i] == word1[j] &#123;<br>				ans[i+<span class="hljs-number">1</span>][j+<span class="hljs-number">1</span>] = ans[i][j]<br>			&#125; <span class="hljs-keyword">else</span> &#123;<br>				ans[i+<span class="hljs-number">1</span>][j+<span class="hljs-number">1</span>] = min(ans[i][j+<span class="hljs-number">1</span>], min(ans[i][j], ans[i+<span class="hljs-number">1</span>][j])) + <span class="hljs-number">1</span><br>			&#125;<br>		&#125;<br><br>	&#125;<br><br>	<span class="hljs-keyword">return</span> ans[<span class="hljs-built_in">len</span>(word2)][<span class="hljs-built_in">len</span>(word1)]<br>&#125;<br></code></pre></td></tr></table></figure>
+
+
 
 
 
@@ -714,26 +741,14 @@
 
 
 
+<h2 id="技巧"><a href="#技巧" class="headerlink" title="技巧"></a>技巧</h2><h3 id="只出现一次的数字-·位运算"><a href="#只出现一次的数字-·位运算" class="headerlink" title="只出现一次的数字 ·位运算"></a>只出现一次的数字 ·位运算</h3><p>题目链接 ：<a target="_blank" rel="noopener" href="https://leetcode.cn/problems/single-number/">只出现一次的数字</a></p>
+<p>只能说妙</p>
+<p>一起异或，相同异或为0，最后只剩只出现一次的</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">singleNumber</span><span class="hljs-params">(nums []<span class="hljs-type">int</span>)</span></span> <span class="hljs-type">int</span> &#123;<br>    single := <span class="hljs-number">0</span><br>    <span class="hljs-keyword">for</span> _, num := <span class="hljs-keyword">range</span> nums &#123;<br>        single ^= num<br>    &#125;<br>    <span class="hljs-keyword">return</span> single<br>&#125;<br><br></code></pre></td></tr></table></figure>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<h3 id="多数元素"><a href="#多数元素" class="headerlink" title="多数元素"></a>多数元素</h3><p><a target="_blank" rel="noopener" href="https://leetcode.cn/problems/majority-element/">多数元素</a></p>
 
                 
               </div>
